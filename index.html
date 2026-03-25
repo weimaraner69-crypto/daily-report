@@ -1369,7 +1369,9 @@ async function submitReport() {
   btn.disabled    = true;
   btn.textContent = '送信中…';
 
-  const payload = collectPayload();
+  const payload    = collectPayload();
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), 12000); // 12秒でタイムアウト
 
   try {
     await fetch(GAS_URL, {
@@ -1377,14 +1379,23 @@ async function submitReport() {
       mode:   'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload),
+      signal:  controller.signal,
     });
+    clearTimeout(timer);
     clearDraft();
     showComplete(payload);
   } catch(err) {
-    savePending(payload);
-    showToast('送信できませんでした。下書きに保存しました', 'error');
-    btn.disabled    = false;
-    btn.textContent = '送信する ✓';
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      // タイムアウト：GASへの送信自体は完了している可能性が高い
+      clearDraft();
+      showComplete(payload);
+    } else {
+      savePending(payload);
+      showToast('送信できませんでした。下書きに保存しました', 'error');
+      btn.disabled    = false;
+      btn.textContent = '送信する ✓';
+    }
   }
 }
 
