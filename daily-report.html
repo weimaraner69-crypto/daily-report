@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>日報入力</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f10;
+    --surface: #18181b;
+    --surface2: #222226;
+    --border: #2e2e33;
+    --accent: #e8c547;
+    --accent2: #4ade80;
+    --text: #f4f4f5;
+    --muted: #71717a;
+    --danger: #f87171;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── 共通ヘッダー ─── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); letter-spacing: .08em; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .draft-badge {
+    font-size: 11px; color: var(--muted); background: var(--surface2);
+    padding: 4px 10px; border-radius: 20px;
+    display: none;
+  }
+  .draft-badge.visible { display: block; }
+
+  /* ─── スクリーン切り替え ─── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ─── ログイン画面 ─── */
+  #screen-login {
+    min-height: calc(100vh - 57px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  #screen-login.active { display: flex; }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px 32px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .login-card h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: .1em;
+    margin-bottom: 8px;
+  }
+  .login-card p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 36px;
+  }
+  .login-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .btn-login-store {
+    width: 100%; padding: 16px;
+    border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-login-store:hover { border-color: var(--accent); color: var(--accent); }
+  .login-divider {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .login-divider::before, .login-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .admin-login-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .admin-login-label { font-size: 12px; color: var(--muted); }
+
+  /* ─── 店舗PIN画面 ─── */
+  #screen-store-pin {
+    min-height: calc(100vh - 57px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  #screen-store-pin.active { display: flex; }
+
+  .pin-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 28px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .pin-card h2 {
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--accent);
+  }
+  .store-selector {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 28px;
+  }
+  .store-option {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: inherit; font-size: 15px;
+    cursor: pointer; transition: all .15s;
+    text-align: left;
+  }
+  .store-option:hover { border-color: var(--muted); }
+  .store-option.selected { border-color: var(--accent); color: var(--accent); background: rgba(232,197,71,.08); }
+  .pin-input-area { margin-bottom: 20px; }
+  .pin-input-area label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 8px; font-weight: 500;
+  }
+  .pin-input-area input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 24px;
+    padding: 14px 16px;
+    outline: none;
+    letter-spacing: .3em;
+    text-align: center;
+    -webkit-appearance: none;
+    transition: border-color .15s;
+  }
+  .pin-input-area input:focus { border-color: var(--accent); }
+  .pin-back-link {
+    text-align: center; margin-top: 16px;
+  }
+  .pin-back-link button {
+    background: none; border: none;
+    color: var(--muted); font-family: inherit; font-size: 13px;
+    cursor: pointer; text-decoration: underline;
+  }
+  .pin-back-link button:hover { color: var(--text); }
+
+  /* ─── 管理者ダッシュボード ─── */
+  #screen-admin { display: none; }
+  #screen-admin.active { display: block; }
+
+  .admin-header-bar {
+    padding: 20px 20px 0;
+    max-width: 1000px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .admin-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; color: var(--accent); letter-spacing: .08em;
+  }
+  .admin-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn-admin-action {
+    padding: 10px 18px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn-admin-action:hover { border-color: var(--muted); }
+  .btn-admin-action.primary {
+    background: var(--accent); color: #0f0f10;
+    border-color: var(--accent);
+  }
+  .btn-admin-action.primary:hover { background: #f0cf5a; }
+
+  .admin-main {
+    padding: 20px;
+    max-width: 1000px; margin: 0 auto;
+  }
+
+  /* 月ナビ */
+  .month-nav {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .month-nav-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    width: 36px; height: 36px;
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .month-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .month-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px; font-weight: 500;
+    min-width: 120px; text-align: center;
+  }
+
+  /* 店舗タブ */
+  .store-tabs {
+    display: flex; gap: 6px; margin-bottom: 24px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .store-tabs::-webkit-scrollbar { display: none; }
+  .store-tab {
+    padding: 7px 16px;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted);
+    font-family: inherit; font-size: 13px;
+    cursor: pointer; white-space: nowrap;
+    transition: all .15s;
+  }
+  .store-tab:hover { border-color: var(--muted); color: var(--text); }
+  .store-tab.active {
+    background: var(--accent); color: #0f0f10;
+    border-color: var(--accent); font-weight: 700;
+  }
+
+  /* サマリーカード */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .summary-card .card-label {
+    font-size: 11px; color: var(--muted);
+    letter-spacing: .06em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .summary-card .card-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px; font-weight: 500;
+    color: var(--accent);
+  }
+  .summary-card .card-sub {
+    font-size: 11px; color: var(--muted); margin-top: 4px;
+  }
+
+  /* テーブル */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .report-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .report-table th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .report-table tr:last-child td { border-bottom: none; }
+  .report-table tr:hover td { background: var(--surface2); }
+  .report-table .num {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent); text-align: right;
+  }
+  .report-table .store-badge {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .admin-empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-size: 14px;
+  }
+
+  /* ─── Step progress ─── */
+  .steps {
+    display: flex; gap: 6px; padding: 16px 20px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .steps::-webkit-scrollbar { display: none; }
+  .step {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    font-size: 12px; white-space: nowrap;
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: pointer; transition: all .2s;
+    flex-shrink: 0;
+  }
+  .step.active { background: var(--accent); color: #0f0f10; border-color: var(--accent); font-weight: 700; }
+  .step.done { color: var(--accent2); border-color: var(--accent2); }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: currentColor; opacity: .15;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+  .step.active .step-num, .step.done .step-num { opacity: 1; background: transparent; }
+
+  /* ─── フォーム ─── */
+  main { padding: 20px; max-width: 640px; margin: 0 auto; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 20px;
+    display: none;
+  }
+  .panel.active { display: block; animation: fadeUp .25s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-title {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: ''; width: 3px; height: 14px;
+    background: var(--accent); border-radius: 2px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 6px; font-weight: 500;
+  }
+  label .req { color: var(--accent); margin-left: 2px; }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input[type="number"] { font-family: 'DM Mono', monospace; }
+  input::placeholder { color: var(--muted); opacity: .5; }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  input:disabled, select:disabled {
+    opacity: .6; cursor: not-allowed;
+  }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .derived {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    margin-top: 12px; display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .derived-item { font-size: 12px; color: var(--muted); }
+  .derived-item span { display: block; font-family: 'DM Mono', monospace; font-size: 18px; color: var(--accent); font-weight: 500; margin-top: 2px; }
+
+  .staff-list { display: flex; flex-direction: column; gap: 12px; }
+  .staff-row {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; position: relative;
+  }
+  .staff-row .remove-btn {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none; color: var(--muted);
+    font-size: 18px; cursor: pointer; line-height: 1; padding: 4px;
+  }
+  .staff-row .remove-btn:hover { color: var(--danger); }
+  .add-staff-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px;
+    background: none; border: 1px dashed var(--border);
+    border-radius: 10px; color: var(--muted);
+    font-size: 14px; cursor: pointer; margin-top: 12px;
+    font-family: inherit; transition: all .2s;
+  }
+  .add-staff-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .error { font-size: 12px; color: var(--danger); margin-top: 4px; }
+
+  .nav {
+    display: flex; gap: 10px; margin-top: 24px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    flex: 1; padding: 14px;
+    border-radius: 10px; border: none;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-primary { background: var(--accent); color: #0f0f10; }
+  .btn-primary:hover { background: #f0cf5a; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--muted); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .confirm-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  }
+  .confirm-block h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+  .confirm-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-row .val { font-family: 'DM Mono', monospace; color: var(--accent); }
+
+  /* ─── 完了画面 ─── */
+  #complete-screen {
+    display: none; text-align: center; padding: 60px 20px;
+  }
+  #complete-screen.active { display: block; animation: fadeUp .3s ease; }
+  .complete-icon { font-size: 56px; margin-bottom: 16px; }
+  #complete-screen h2 { font-size: 22px; margin-bottom: 8px; }
+  #complete-screen p { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .complete-meta { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 32px; }
+  .complete-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 12px 24px; border-radius: 50px;
+    font-size: 14px; color: var(--text);
+    opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 9999; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { border-color: var(--accent2); color: var(--accent2); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* ─── モーダル ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 500;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%; max-width: 360px;
+    animation: fadeUp .2s ease;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 20px; }
+  .modal-store-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .modal-store-btn {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: inherit; font-size: 15px; font-weight: 500;
+    cursor: pointer; text-align: left; transition: all .15s;
+  }
+  .modal-store-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-cancel {
+    width: 100%; padding: 12px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    font-family: inherit; font-size: 14px;
+    cursor: pointer; transition: all .15s;
+  }
+  .modal-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+  @media (max-width: 400px) {
+    .row { grid-template-columns: 1fr; }
+    main { padding: 14px; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="header-logo">日報管理</div>
+  <div class="header-right">
+    <div class="draft-badge" id="draft-badge">下書き保存済</div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- screen-login: ログイン選択                                     -->
+<!-- ============================================================ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <h1>DAILY REPORT</h1>
+    <p>ログイン方法を選択してください</p>
+    <div class="login-btn-group">
+      <button class="btn-login-store" onclick="showStorePinScreen()">店舗ログイン</button>
+      <div class="login-divider">または</div>
+      <div class="admin-login-area">
+        <div class="admin-login-label">管理者ログイン</div>
+        <div id="google-signin-btn"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- screen-store-pin: 店舗選択 + PIN入力                           -->
+<!-- ============================================================ -->
+<div id="screen-store-pin" class="screen">
+  <div class="pin-card">
+    <h2>店舗・PIN入力</h2>
+    <div class="store-selector" id="store-selector">
+      <button class="store-option" onclick="selectStore('nishiin', this)">西院のどんつき</button>
+      <button class="store-option" onclick="selectStore('kashio_sake', this)">樫尾酒店</button>
+      <button class="store-option" onclick="selectStore('kashio_shokudo', this)">樫尾食堂</button>
+    </div>
+    <div class="pin-input-area">
+      <label for="pin-input">PIN コード</label>
+      <input type="password" id="pin-input" inputmode="numeric" maxlength="8" placeholder="● ● ● ●" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="submitPin()">ログイン</button>
+    <div class="pin-back-link">
+      <button onclick="showLoginScreen()">← 戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- screen-admin: 管理者ダッシュボード                             -->
+<!-- ============================================================ -->
+<div id="screen-admin" class="screen">
+  <div class="admin-header-bar">
+    <div class="admin-title">管理者ダッシュボード</div>
+    <div class="admin-actions">
+      <button class="btn-admin-action primary" onclick="openStoreSelectModal()">店舗として入力</button>
+      <button class="btn-admin-action" onclick="adminLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="admin-main">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+      <div class="month-label" id="month-label">---</div>
+      <button class="month-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+    </div>
+
+    <div class="store-tabs" id="store-tabs">
+      <button class="store-tab active" data-store="all" onclick="switchTab('all', this)">全店舗</button>
+      <button class="store-tab" data-store="nishiin" onclick="switchTab('nishiin', this)">西院のどんつき</button>
+      <button class="store-tab" data-store="kashio_sake" onclick="switchTab('kashio_sake', this)">樫尾酒店</button>
+      <button class="store-tab" data-store="kashio_shokudo" onclick="switchTab('kashio_shokudo', this)">樫尾食堂</button>
+    </div>
+
+    <div class="summary-grid" id="summary-grid"></div>
+
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>店舗</th>
+            <th style="text-align:right">売上</th>
+            <th style="text-align:right">客数</th>
+            <th style="text-align:right">客単価</th>
+            <th style="text-align:right">仕入れ</th>
+            <th>備考</th>
+          </tr>
+        </thead>
+        <tbody id="report-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- screen-form: 日報入力フォーム                                   -->
+<!-- ============================================================ -->
+<div id="screen-form" class="screen">
+  <header>
+    <div class="logo" id="form-store-label">📋 日報入力</div>
+    <button onclick="logoutToLogin()" style="background:none;border:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;padding:4px 8px;">ログアウト</button>
+  </header>
+  <div class="steps" id="steps">
+    <div class="step active" onclick="goToStep(0)"><div class="step-num">1</div>基本情報</div>
+    <div class="step" onclick="goToStep(1)"><div class="step-num">2</div>営業データ</div>
+    <div class="step" onclick="goToStep(2)"><div class="step-num">3</div>仕入れ</div>
+    <div class="step" onclick="goToStep(3)"><div class="step-num">4</div>出退勤</div>
+    <div class="step" onclick="goToStep(4)"><div class="step-num">5</div>確認・送信</div>
+  </div>
+
+  <main>
+    <!-- Step 0: 基本情報 -->
+    <div class="panel active" id="panel-0">
+      <div class="panel-title">基本情報</div>
+      <div class="field">
+        <label for="date">日付 <span class="req">*</span></label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="field" id="store-field">
+        <label for="store">店舗 <span class="req">*</span></label>
+        <select id="store" required>
+          <option value="">選択してください</option>
+          <option value="nishiin">西院のどんつき</option>
+          <option value="kashio_sake">樫尾酒店</option>
+          <option value="kashio_shokudo">樫尾食堂</option>
+        </select>
+      </div>
+      <div class="nav">
+        <button class="btn btn-primary" onclick="nextStep(0)">次へ &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 1: 営業データ -->
+    <div class="panel" id="panel-1">
+      <div class="panel-title">営業データ</div>
+      <div class="row">
+        <div class="field">
+          <label for="cash-sales">売上（現金）</label>
+          <input type="number" id="cash-sales" inputmode="numeric" min="0" placeholder="0" oninput="calcDerived()">
+        </div>
+        <div class="field">
+          <label for="cashless-sales">売上（非現金）</label>
+          <input type="number" id="cashless-sales" inputmode="numeric" min="0" placeholder="0" oninput="calcDerived()">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="customers-total">客数（全体）</label>
+          <input type="number" id="customers-total" inputmode="numeric" min="0" placeholder="0" oninput="calcDerived()">
+        </div>
+        <div class="field">
+          <label for="customers-new">客数（新規）</label>
+          <input type="number" id="customers-new" inputmode="numeric" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="derived">
+        <div class="derived-item">総売上<span id="total-sales">¥0</span></div>
+        <div class="derived-item">客単価<span id="unit-price">—</span></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-secondary" onclick="prevStep(1)">&#8592; 戻る</button>
+        <button class="btn btn-primary" onclick="nextStep(1)">次へ &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 2: 仕入れ -->
+    <div class="panel" id="panel-2">
+      <div class="panel-title">仕入れ（売上原価）</div>
+      <div class="field">
+        <label for="purchase-cash">現金仕入れ</label>
+        <input type="number" id="purchase-cash" inputmode="numeric" min="0" placeholder="0" oninput="calcPurchase()">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="purchase-a">掛け仕入れ 業者A</label>
+          <input type="number" id="purchase-a" inputmode="numeric" min="0" placeholder="0" oninput="calcPurchase()">
+        </div>
+        <div class="field">
+          <label for="purchase-b">掛け仕入れ 業者B</label>
+          <input type="number" id="purchase-b" inputmode="numeric" min="0" placeholder="0" oninput="calcPurchase()">
+        </div>
+        <div class="field">
+          <label for="purchase-c">掛け仕入れ 業者C</label>
+          <input type="number" id="purchase-c" inputmode="numeric" min="0" placeholder="0" oninput="calcPurchase()">
+        </div>
+        <div class="field">
+          <label for="purchase-d">掛け仕入れ 業者D</label>
+          <input type="number" id="purchase-d" inputmode="numeric" min="0" placeholder="0" oninput="calcPurchase()">
+        </div>
+      </div>
+      <div class="derived">
+        <div class="derived-item">仕入れ合計<span id="purchase-total">¥0</span></div>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label for="purchase-note">備考（任意）</label>
+        <textarea id="purchase-note" placeholder="特記事項があれば…"></textarea>
+      </div>
+      <div class="nav">
+        <button class="btn btn-secondary" onclick="prevStep(2)">&#8592; 戻る</button>
+        <button class="btn btn-primary" onclick="nextStep(2)">次へ &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: 出退勤 -->
+    <div class="panel" id="panel-3">
+      <div class="panel-title">スタッフ出退勤</div>
+      <div class="staff-list" id="staff-list"></div>
+      <button class="add-staff-btn" onclick="addStaffRow()">＋ スタッフを追加</button>
+      <div class="nav">
+        <button class="btn btn-secondary" onclick="prevStep(3)">&#8592; 戻る</button>
+        <button class="btn btn-primary" onclick="nextStep(3)">確認へ &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 4: 確認・送信 -->
+    <div class="panel" id="panel-4">
+      <div class="panel-title">入力内容の確認</div>
+      <div id="confirm-content"></div>
+      <div class="nav">
+        <button class="btn btn-secondary" onclick="prevStep(4)">&#8592; 戻る</button>
+        <button class="btn btn-primary" id="submit-btn" onclick="submitReport()">送信する ✓</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 完了画面 -->
+  <div id="complete-screen">
+    <div class="complete-icon">✅</div>
+    <h2>送信完了しました</h2>
+    <p>日報が正常に保存されました</p>
+    <div class="complete-meta" id="complete-meta"></div>
+    <div class="complete-actions">
+      <button class="btn btn-secondary" onclick="resetFormForNew()" style="max-width:220px">新しい日報を入力</button>
+      <button class="btn btn-primary" id="back-to-admin-btn" onclick="backToAdmin()" style="max-width:220px;display:none">ダッシュボードへ戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- 店舗選択モーダル（管理者用） -->
+<div class="modal-overlay" id="store-select-modal">
+  <div class="modal">
+    <h3>入力する店舗を選択</h3>
+    <div class="modal-store-list">
+      <button class="modal-store-btn" onclick="startFormAsAdmin('nishiin', '西院のどんつき')">西院のどんつき</button>
+      <button class="modal-store-btn" onclick="startFormAsAdmin('kashio_sake', '樫尾酒店')">樫尾酒店</button>
+      <button class="modal-store-btn" onclick="startFormAsAdmin('kashio_shokudo', '樫尾食堂')">樫尾食堂</button>
+    </div>
+    <button class="modal-cancel" onclick="closeStoreSelectModal()">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 設定
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfPzDtB8C2rOns0g_WF6lH8hvHxfD_UH6KO3VpaGc7TSyhyjCTy7exyPtFUwxo0_KV/exec';
+
+const GOOGLE_CLIENT_ID = '631477582899-s9rl9cj4sr2e765ehifgv3b613j7i31i.apps.googleusercontent.com';
+const ADMIN_EMAIL      = 'weimaraner69@gmail.com';
+
+const STORE_NAMES = {
+  nishiin:        '西院のどんつき',
+  kashio_sake:    '樫尾酒店',
+  kashio_shokudo: '樫尾食堂',
+};
+
+const STAFF_LIST = [
+  '田中 太郎', '佐藤 花子', '鈴木 一郎',
+  '山田 二郎', '中村 三恵', '小林 四郎',
+  'その他'
+];
+
+// ============================================================
+// セッション管理
+// ============================================================
+
+function getSession() {
+  try {
+    const raw = sessionStorage.getItem('session');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function setSession(data) {
+  sessionStorage.setItem('session', JSON.stringify(data));
+}
+
+function clearSession() {
+  sessionStorage.removeItem('session');
+}
+
+// ============================================================
+// 画面切り替え
+// ============================================================
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function showLoginScreen() {
+  clearSession();
+  showScreen('screen-login');
+  document.getElementById('header-logo').textContent = '日報管理';
+  // PINリセット
+  selectedStoreId = '';
+  document.getElementById('pin-input').value = '';
+  document.querySelectorAll('.store-option').forEach(b => b.classList.remove('selected'));
+}
+
+function showStorePinScreen() {
+  selectedStoreId = '';
+  document.querySelectorAll('.store-option').forEach(b => b.classList.remove('selected'));
+  document.getElementById('pin-input').value = '';
+  showScreen('screen-store-pin');
+  document.getElementById('header-logo').textContent = '店舗ログイン';
+}
+
+function showAdminDashboard() {
+  showScreen('screen-admin');
+  document.getElementById('header-logo').textContent = '管理者ダッシュボード';
+  loadAdminData();
+}
+
+// ============================================================
+// Google Sign-In
+// ============================================================
+
+window.addEventListener('load', () => {
+  // セッション復元
+  const sess = getSession();
+  if (sess) {
+    if (sess.type === 'admin') {
+      showAdminDashboard();
+      return;
+    }
+    if (sess.type === 'store') {
+      initFormScreen(sess.store_id, sess.store_name, false);
+      return;
+    }
+    if (sess.type === 'admin_from_store') {
+      initFormScreen(sess.store_id, sess.store_name, true);
+      return;
+    }
+  }
+
+  // Google Sign-In ボタン初期化
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-signin-btn'),
+    { theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', width: 280 }
+  );
+
+  // pending 再送
+  retryPending();
+});
+
+function handleGoogleCredential(response) {
+  try {
+    const payload = decodeJwt(response.credential);
+    const email   = payload.email || '';
+    if (email !== ADMIN_EMAIL) {
+      showToast('このアカウントは管理者ではありません', 'error');
+      return;
+    }
+    setSession({ type: 'admin', email });
+    showAdminDashboard();
+  } catch(e) {
+    showToast('Googleログインに失敗しました', 'error');
+  }
+}
+
+function decodeJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  const json    = decodeURIComponent(atob(base64).split('').map(c =>
+    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+  ).join(''));
+  return JSON.parse(json);
+}
+
+// ============================================================
+// 店舗 PIN 認証
+// ============================================================
+
+let selectedStoreId = '';
+
+function selectStore(id, btn) {
+  selectedStoreId = id;
+  document.querySelectorAll('.store-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('pin-input').focus();
+}
+
+async function submitPin() {
+  if (!selectedStoreId) {
+    showToast('店舗を選択してください', 'error');
+    return;
+  }
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!pin) {
+    showToast('PINを入力してください', 'error');
+    return;
+  }
+
+  try {
+    const url = `${GAS_URL}?action=verifyPin&store=${encodeURIComponent(selectedStoreId)}&pin=${encodeURIComponent(pin)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.ok) {
+      const storeName = data.store_name || STORE_NAMES[selectedStoreId] || selectedStoreId;
+      setSession({ type: 'store', store_id: selectedStoreId, store_name: storeName });
+      initFormScreen(selectedStoreId, storeName, false);
+    } else {
+      showToast('PINが違います', 'error');
+      document.getElementById('pin-input').value = '';
+    }
+  } catch(e) {
+    showToast('通信エラーが発生しました', 'error');
+  }
+}
+
+// Enterキーでも送信
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pin-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitPin();
+  });
+});
+
+// ============================================================
+// 管理者ダッシュボード
+// ============================================================
+
+let adminYear  = new Date().getFullYear();
+let adminMonth = new Date().getMonth() + 1;
+let adminTab   = 'all';
+let adminData  = null;
+
+function changeMonth(delta) {
+  adminMonth += delta;
+  if (adminMonth > 12) { adminMonth = 1; adminYear++; }
+  if (adminMonth < 1)  { adminMonth = 12; adminYear--; }
+  loadAdminData();
+}
+
+function switchTab(storeId, btn) {
+  adminTab = storeId;
+  document.querySelectorAll('.store-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdminData();
+}
+
+async function loadAdminData() {
+  document.getElementById('month-label').textContent =
+    `${adminYear}年${adminMonth}月`;
+
+  document.getElementById('report-tbody').innerHTML =
+    '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">読み込み中…</td></tr>';
+  document.getElementById('summary-grid').innerHTML = '';
+
+  try {
+    const url  = `${GAS_URL}?action=getAggregation&year=${adminYear}&month=${adminMonth}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (json.ok) {
+      adminData = json.data;
+      renderAdminData();
+    } else {
+      showToast('データの取得に失敗しました', 'error');
+    }
+  } catch(e) {
+    showToast('通信エラーが発生しました', 'error');
+    document.getElementById('report-tbody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">データを取得できませんでした</td></tr>';
+  }
+}
+
+function renderAdminData() {
+  if (!adminData) return;
+
+  const fmt = v => (v || 0).toLocaleString();
+
+  // ─ サマリーカード ─
+  const summaryGrid = document.getElementById('summary-grid');
+  summaryGrid.innerHTML = '';
+
+  if (adminTab === 'all') {
+    // 各店舗 + 合計
+    adminData.summary.forEach(s => {
+      summaryGrid.appendChild(makeSummaryCard(s.store_name, s));
+    });
+    summaryGrid.appendChild(makeSummaryCard('全店合計', adminData.grand, true));
+  } else {
+    const s = adminData.summary.find(s => s.store_id === adminTab);
+    if (s) summaryGrid.appendChild(makeSummaryCard(s.store_name, s));
+  }
+
+  // ─ テーブル ─
+  const tbody = document.getElementById('report-tbody');
+  const reports = adminData.reports || [];
+  const filtered = adminTab === 'all'
+    ? reports
+    : reports.filter(r => String(r.store_id) === adminTab);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">データがありません</td></tr>';
+    return;
+  }
+
+  const sorted = [...filtered].sort((a, b) => String(a.date) < String(b.date) ? 1 : -1);
+
+  tbody.innerHTML = sorted.map(r => {
+    const storeName = r.store_name || STORE_NAMES[r.store_id] || r.store_id;
+    const unitPrice = (r.customers_total > 0)
+      ? Math.round((r.total_sales || 0) / r.customers_total)
+      : '—';
+    const dateStr = String(r.date || '').substring(0, 10);
+    return `
+      <tr>
+        <td>${dateStr}</td>
+        <td><span class="store-badge">${storeName}</span></td>
+        <td class="num">¥${fmt(r.total_sales)}</td>
+        <td class="num">${fmt(r.customers_total)}名</td>
+        <td class="num">${unitPrice !== '—' ? '¥' + unitPrice.toLocaleString() : '—'}</td>
+        <td class="num">¥${fmt(r.purchase_total)}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.note || ''}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function makeSummaryCard(title, data, highlight) {
+  const fmt = v => (v || 0).toLocaleString();
+  const card = document.createElement('div');
+  card.className = 'summary-card';
+  if (highlight) card.style.borderColor = 'var(--accent)';
+  card.innerHTML = `
+    <div class="card-label">${title}</div>
+    <div class="card-value">¥${fmt(data.total_sales)}</div>
+    <div class="card-sub">客数 ${fmt(data.customers_total)}名 / 仕入れ ¥${fmt(data.purchase_total)}</div>
+  `;
+  return card;
+}
+
+function adminLogout() {
+  clearSession();
+  google.accounts.id.disableAutoSelect();
+  showLoginScreen();
+  // Googleボタン再レンダリング
+  setTimeout(() => {
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-btn'),
+      { theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', width: 280 }
+    );
+  }, 100);
+}
+
+// ─ 「店舗として入力」モーダル ─
+function openStoreSelectModal() {
+  document.getElementById('store-select-modal').classList.add('active');
+}
+
+function closeStoreSelectModal() {
+  document.getElementById('store-select-modal').classList.remove('active');
+}
+
+function startFormAsAdmin(storeId, storeName) {
+  closeStoreSelectModal();
+  setSession({ type: 'admin_from_store', store_id: storeId, store_name: storeName });
+  initFormScreen(storeId, storeName, true);
+}
+
+// ============================================================
+// フォーム画面初期化
+// ============================================================
+
+let currentStep     = 0;
+let staffRows       = [];
+let staffIdCounter  = 0;
+let formStoreId     = '';
+let formStoreName   = '';
+let formIsAdminMode = false;
+
+function initFormScreen(storeId, storeName, isAdmin) {
+  formStoreId     = storeId;
+  formStoreName   = storeName;
+  formIsAdminMode = isAdmin;
+
+  // ヘッダー
+  document.getElementById('form-store-label').textContent = '📋 ' + storeName;
+
+  // 店舗セレクト制御
+  const storeSelect = document.getElementById('store');
+  storeSelect.value = storeId;
+  storeSelect.disabled = true;
+
+  // 日付デフォルト
+  const today = new Date();
+  const yyyy  = today.getFullYear();
+  const mm    = String(today.getMonth() + 1).padStart(2, '0');
+  const dd    = String(today.getDate()).padStart(2, '0');
+  document.getElementById('date').value = `${yyyy}-${mm}-${dd}`;
+
+  // ステップリセット
+  currentStep = 0;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-0').classList.add('active');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i === 0) s.classList.add('active');
+  });
+
+  // スタッフリセット
+  staffRows = [];
+  staffIdCounter = 0;
+  document.getElementById('staff-list').innerHTML = '';
+  addStaffRow();
+
+  // 完了画面リセット
+  document.getElementById('complete-screen').classList.remove('active');
+  document.getElementById('steps').style.display = '';
+  document.querySelector('#screen-form main').style.display = '';
+
+  // 下書き復元
+  loadDraft();
+
+  showScreen('screen-form');
+}
+
+// ============================================================
+// ステップナビゲーション
+// ============================================================
+
+function goToStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+
+  document.getElementById(`panel-${currentStep}`)?.classList.remove('active');
+  document.querySelectorAll('.step')[currentStep]?.classList.remove('active');
+  if (n > currentStep) {
+    document.querySelectorAll('.step')[currentStep]?.classList.add('done');
+  }
+
+  currentStep = n;
+  document.getElementById(`panel-${currentStep}`)?.classList.add('active');
+  document.querySelectorAll('.step')[currentStep]?.classList.add('active');
+  document.querySelectorAll('.step')[currentStep]?.classList.remove('done');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (currentStep === 4) buildConfirm();
+  saveDraft();
+}
+
+function nextStep(from) { goToStep(from + 1); }
+function prevStep(from) { goToStep(from - 1); }
+
+// ============================================================
+// バリデーション
+// ============================================================
+
+function validateStep(step) {
+  if (step === 0) {
+    const date  = document.getElementById('date').value;
+    const store = document.getElementById('store').value;
+    if (!date)  { showToast('日付を入力してください', 'error'); return false; }
+    if (!store) { showToast('店舗を選択してください', 'error'); return false; }
+  }
+  if (step === 1) {
+    const total = parseInt(document.getElementById('customers-total').value || '0');
+    const newc  = parseInt(document.getElementById('customers-new').value || '0');
+    if (newc > total) { showToast('新規客数が全体を超えています', 'error'); return false; }
+  }
+  return true;
+}
+
+// ============================================================
+// 計算
+// ============================================================
+
+function calcDerived() {
+  const cash     = parseFloat(document.getElementById('cash-sales').value) || 0;
+  const cashless = parseFloat(document.getElementById('cashless-sales').value) || 0;
+  const total    = cash + cashless;
+  const customers = parseInt(document.getElementById('customers-total').value) || 0;
+  document.getElementById('total-sales').textContent = '¥' + total.toLocaleString();
+  document.getElementById('unit-price').textContent  =
+    customers > 0 ? '¥' + Math.round(total / customers).toLocaleString() : '—';
+}
+
+function calcPurchase() {
+  const ids   = ['purchase-cash','purchase-a','purchase-b','purchase-c','purchase-d'];
+  const total = ids.reduce((s, id) => s + (parseFloat(document.getElementById(id).value) || 0), 0);
+  document.getElementById('purchase-total').textContent = '¥' + total.toLocaleString();
+}
+
+// ============================================================
+// スタッフ行
+// ============================================================
+
+function addStaffRow() {
+  const id   = ++staffIdCounter;
+  staffRows.push(id);
+  const opts = STAFF_LIST.map(s => `<option value="${s}">${s}</option>`).join('');
+  const div  = document.createElement('div');
+  div.className = 'staff-row';
+  div.id        = `staff-${id}`;
+  div.innerHTML = `
+    <button class="remove-btn" onclick="removeStaffRow(${id})">&#10005;</button>
+    <div class="field">
+      <label>スタッフ名</label>
+      <select id="staff-name-${id}">
+        <option value="">選択してください</option>
+        ${opts}
+      </select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>出勤時間</label>
+        <input type="time" id="staff-start-${id}">
+      </div>
+      <div class="field">
+        <label>退勤時間</label>
+        <input type="time" id="staff-end-${id}">
+      </div>
+    </div>
+    <div class="field">
+      <label>休憩（分）</label>
+      <input type="number" id="staff-break-${id}" inputmode="numeric" min="0" max="999" placeholder="0">
+    </div>
+  `;
+  document.getElementById('staff-list').appendChild(div);
+}
+
+function removeStaffRow(id) {
+  staffRows = staffRows.filter(r => r !== id);
+  document.getElementById(`staff-${id}`)?.remove();
+}
+
+function getStaffData() {
+  return staffRows.map(id => {
+    const name  = document.getElementById(`staff-name-${id}`)?.value || '';
+    const start = document.getElementById(`staff-start-${id}`)?.value || '';
+    const end   = document.getElementById(`staff-end-${id}`)?.value || '';
+    const brk   = parseInt(document.getElementById(`staff-break-${id}`)?.value || '0');
+    let work = null;
+    if (start && end) {
+      const [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      work = (eh * 60 + em) - (sh * 60 + sm) - brk;
+    }
+    return { name, start, end, break_minutes: brk, work_minutes: work };
+  }).filter(s => s.name);
+}
+
+// ============================================================
+// 確認画面
+// ============================================================
+
+function buildConfirm() {
+  const date   = document.getElementById('date').value;
+  const store  = STORE_NAMES[document.getElementById('store').value] || '';
+  const cash   = parseFloat(document.getElementById('cash-sales').value) || 0;
+  const cl     = parseFloat(document.getElementById('cashless-sales').value) || 0;
+  const total  = cash + cl;
+  const ctotal = parseInt(document.getElementById('customers-total').value) || 0;
+  const cnew   = parseInt(document.getElementById('customers-new').value) || 0;
+  const pCash  = parseFloat(document.getElementById('purchase-cash').value) || 0;
+  const pA     = parseFloat(document.getElementById('purchase-a').value) || 0;
+  const pB     = parseFloat(document.getElementById('purchase-b').value) || 0;
+  const pC     = parseFloat(document.getElementById('purchase-c').value) || 0;
+  const pD     = parseFloat(document.getElementById('purchase-d').value) || 0;
+  const pTotal = pCash + pA + pB + pC + pD;
+  const note   = document.getElementById('purchase-note').value;
+  const staff  = getStaffData();
+  const fmt    = v => v ? '¥' + v.toLocaleString() : '¥0';
+
+  const staffHtml = staff.length > 0
+    ? staff.map(s => `<div class="confirm-row"><span>${s.name}</span><span class="val">${s.start || '--'}〜${s.end || '--'} (休憩${s.break_minutes}分)</span></div>`).join('')
+    : '<div class="confirm-row"><span style="color:var(--muted)">登録なし</span><span></span></div>';
+
+  document.getElementById('confirm-content').innerHTML = `
+    <div class="confirm-block">
+      <h4>基本情報</h4>
+      <div class="confirm-row"><span>日付</span><span class="val">${date}</span></div>
+      <div class="confirm-row"><span>店舗</span><span class="val">${store}</span></div>
+    </div>
+    <div class="confirm-block">
+      <h4>営業データ</h4>
+      <div class="confirm-row"><span>売上（現金）</span><span class="val">${fmt(cash)}</span></div>
+      <div class="confirm-row"><span>売上（非現金）</span><span class="val">${fmt(cl)}</span></div>
+      <div class="confirm-row"><span>総売上</span><span class="val">${fmt(total)}</span></div>
+      <div class="confirm-row"><span>客数（全体）</span><span class="val">${ctotal}名</span></div>
+      <div class="confirm-row"><span>客数（新規）</span><span class="val">${cnew}名</span></div>
+    </div>
+    <div class="confirm-block">
+      <h4>仕入れ</h4>
+      <div class="confirm-row"><span>現金仕入れ</span><span class="val">${fmt(pCash)}</span></div>
+      <div class="confirm-row"><span>業者A</span><span class="val">${fmt(pA)}</span></div>
+      <div class="confirm-row"><span>業者B</span><span class="val">${fmt(pB)}</span></div>
+      <div class="confirm-row"><span>業者C</span><span class="val">${fmt(pC)}</span></div>
+      <div class="confirm-row"><span>業者D</span><span class="val">${fmt(pD)}</span></div>
+      <div class="confirm-row"><span>仕入れ合計</span><span class="val">${fmt(pTotal)}</span></div>
+      ${note ? `<div class="confirm-row"><span>備考</span><span class="val" style="font-family:inherit;font-size:13px">${note}</span></div>` : ''}
+    </div>
+    <div class="confirm-block">
+      <h4>スタッフ出退勤（${staff.length}名）</h4>
+      ${staffHtml}
+    </div>
+  `;
+}
+
+// ============================================================
+// 送信
+// ============================================================
+
+async function submitReport() {
+  const btn = document.getElementById('submit-btn');
+  if (btn.disabled) return;
+  btn.disabled    = true;
+  btn.textContent = '送信中…';
+
+  const payload = collectPayload();
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode:   'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    clearDraft();
+    showComplete(payload);
+  } catch(err) {
+    savePending(payload);
+    showToast('送信できませんでした。下書きに保存しました', 'error');
+    btn.disabled    = false;
+    btn.textContent = '送信する ✓';
+  }
+}
+
+function collectPayload() {
+  const store = document.getElementById('store').value;
+  const cash  = parseFloat(document.getElementById('cash-sales').value) || 0;
+  const cl    = parseFloat(document.getElementById('cashless-sales').value) || 0;
+  return {
+    date:            document.getElementById('date').value,
+    store_id:        store,
+    store_name:      STORE_NAMES[store] || store,
+    cash_sales:      cash,
+    cashless_sales:  cl,
+    total_sales:     cash + cl,
+    customers_total: parseInt(document.getElementById('customers-total').value) || 0,
+    customers_new:   parseInt(document.getElementById('customers-new').value) || 0,
+    purchase_cash:   parseFloat(document.getElementById('purchase-cash').value) || 0,
+    purchase_a:      parseFloat(document.getElementById('purchase-a').value) || 0,
+    purchase_b:      parseFloat(document.getElementById('purchase-b').value) || 0,
+    purchase_c:      parseFloat(document.getElementById('purchase-c').value) || 0,
+    purchase_d:      parseFloat(document.getElementById('purchase-d').value) || 0,
+    note:            document.getElementById('purchase-note').value,
+    staff:           getStaffData(),
+    submitted_at:    new Date().toISOString(),
+    is_latest:       true,
+  };
+}
+
+function showComplete(payload) {
+  document.querySelector('#screen-form main').style.display = 'none';
+  document.getElementById('steps').style.display = 'none';
+  const cs = document.getElementById('complete-screen');
+  cs.classList.add('active');
+  document.getElementById('complete-meta').textContent =
+    `${payload.store_name}  ${payload.date}  ${new Date().toLocaleTimeString('ja-JP')} 送信`;
+
+  // 管理者セッションからの入力なら「ダッシュボードへ戻る」を表示
+  const backBtn = document.getElementById('back-to-admin-btn');
+  backBtn.style.display = formIsAdminMode ? '' : 'none';
+}
+
+function resetFormForNew() {
+  // 同じ店舗・モードで新しい日報入力に戻る
+  initFormScreen(formStoreId, formStoreName, formIsAdminMode);
+}
+
+function logoutToLogin() {
+  clearSession();
+  clearDraft();
+  showScreen('screen-login');
+}
+
+function backToAdmin() {
+  // セッションを管理者に戻す
+  setSession({ type: 'admin', email: ADMIN_EMAIL });
+  showAdminDashboard();
+}
+
+// ============================================================
+// 下書き保存（sessionStorage）
+// ============================================================
+
+function saveDraft() {
+  try {
+    const data = collectPayloadSafe();
+    sessionStorage.setItem('draft_report', JSON.stringify({ data, step: currentStep }));
+    document.getElementById('draft-badge').classList.add('visible');
+  } catch(e) {}
+}
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem('draft_report');
+    if (!raw) return;
+    const { data } = JSON.parse(raw);
+    if (data.date)             document.getElementById('date').value             = data.date;
+    if (data.cash_sales)       document.getElementById('cash-sales').value       = data.cash_sales;
+    if (data.cashless_sales)   document.getElementById('cashless-sales').value   = data.cashless_sales;
+    if (data.customers_total)  document.getElementById('customers-total').value  = data.customers_total;
+    if (data.customers_new)    document.getElementById('customers-new').value    = data.customers_new;
+    if (data.purchase_cash)    document.getElementById('purchase-cash').value    = data.purchase_cash;
+    if (data.purchase_a)       document.getElementById('purchase-a').value       = data.purchase_a;
+    if (data.purchase_b)       document.getElementById('purchase-b').value       = data.purchase_b;
+    if (data.purchase_c)       document.getElementById('purchase-c').value       = data.purchase_c;
+    if (data.purchase_d)       document.getElementById('purchase-d').value       = data.purchase_d;
+    if (data.note)             document.getElementById('purchase-note').value    = data.note;
+    calcDerived();
+    calcPurchase();
+    document.getElementById('draft-badge').classList.add('visible');
+  } catch(e) {}
+}
+
+function clearDraft() {
+  sessionStorage.removeItem('draft_report');
+  sessionStorage.removeItem('pending_report');
+  document.getElementById('draft-badge').classList.remove('visible');
+}
+
+function savePending(payload) {
+  sessionStorage.setItem('pending_report', JSON.stringify(payload));
+}
+
+function collectPayloadSafe() {
+  try { return collectPayload(); } catch(e) { return {}; }
+}
+
+// ============================================================
+// Toast
+// ============================================================
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// 自動保存
+// ============================================================
+
+let draftTimer;
+document.addEventListener('input', () => {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    // フォーム画面のときのみ保存
+    if (document.getElementById('screen-form').classList.contains('active')) {
+      saveDraft();
+    }
+  }, 800);
+});
+
+// ============================================================
+// pending 再送（sessionStorage版）
+// ============================================================
+
+async function retryPending() {
+  const pending = sessionStorage.getItem('pending_report');
+  if (!pending) return;
+  showToast('未送信の日報があります。再送信します…');
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body:    pending,
+    });
+    sessionStorage.removeItem('pending_report');
+    showToast('未送信の日報を送信しました', 'success');
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
