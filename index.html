@@ -844,7 +844,6 @@ function showScreen(id) {
 function showLoginScreen() {
   clearSession();
   showScreen('screen-login');
-  document.getElementById('header-logo').textContent = '日報管理';
   // PINリセット
   selectedStoreId = '';
   document.getElementById('pin-input').value = '';
@@ -1428,9 +1427,8 @@ function resetFormForNew() {
 }
 
 function logoutToLogin() {
-  clearSession();
   clearDraft();
-  showScreen('screen-login');
+  adminLogout();
 }
 
 function backToAdmin() {
