@@ -1167,6 +1167,11 @@ function initFormScreen(storeId, storeName, isAdmin) {
   document.getElementById('steps').style.display = '';
   document.querySelector('#screen-form main').style.display = '';
 
+  // 送信ボタンリセット
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = '送信する ✓';
+
   // 下書き復元
   loadDraft();
 
