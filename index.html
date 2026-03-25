@@ -636,6 +636,10 @@
 <!-- screen-form: 日報入力フォーム                                   -->
 <!-- ============================================================ -->
 <div id="screen-form" class="screen">
+  <header>
+    <div class="logo" id="form-store-label">📋 日報入力</div>
+    <button onclick="logoutToLogin()" style="background:none;border:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;padding:4px 8px;">ログアウト</button>
+  </header>
   <div class="steps" id="steps">
     <div class="step active" onclick="goToStep(0)"><div class="step-num">1</div>基本情報</div>
     <div class="step" onclick="goToStep(1)"><div class="step-num">2</div>営業データ</div>
@@ -1130,7 +1134,7 @@ function initFormScreen(storeId, storeName, isAdmin) {
   formIsAdminMode = isAdmin;
 
   // ヘッダー
-  document.getElementById('header-logo').textContent = storeName;
+  document.getElementById('form-store-label').textContent = '📋 ' + storeName;
 
   // 店舗セレクト制御
   const storeSelect = document.getElementById('store');
@@ -1421,6 +1425,12 @@ function showComplete(payload) {
 function resetFormForNew() {
   // 同じ店舗・モードで新しい日報入力に戻る
   initFormScreen(formStoreId, formStoreName, formIsAdminMode);
+}
+
+function logoutToLogin() {
+  clearSession();
+  clearDraft();
+  showScreen('screen-login');
 }
 
 function backToAdmin() {
